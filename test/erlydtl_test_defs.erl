@@ -210,7 +210,7 @@ all_test_defs() ->
         <<"It is the {% now \"jS \\o\\f F Y\" %}.">>, [{var1, ""}], generate_test_date()}
      ]},
       {"now",
-      [{"now function with translation", % notice, that only date output is traslated. While you might want to transle the whole format string ('F'->'E')
+      [{"now function with translation", % notice, that only date output is translated. While you might want to transle the whole format string ('F'->'E')
         <<"It is the {% now \"jS \\o\\f F Y\" %}.">>, [{var1, ""}], [{locale, <<"ru">>}, {translation_fun, fun date_translation/2}], generate_test_date(russian)}
      ]},
      {"if",
@@ -1980,7 +1980,10 @@ error_info(Ei) ->
     error_info(Ei, erlydtl_beam_compiler).
 
 
-template_file(Dir, Name) -> filename:join(["../test/files", Dir, Name]).
+template_file(Dir, Name) ->
+    %% {ok, CWD} = file:get_cwd(),
+    %% io:format(user, "~s~n", [CWD]),
+    filename:join(["test/files", Dir, Name]).
 
 functional_test(F) ->
     setup_compile(#test{
@@ -1990,7 +1993,7 @@ functional_test(F) ->
                     }).
 
 setup_compile(#test{ title=F, compile_opts=Opts }=T) ->
-    CompileOpts = [{doc_root, "../test/files/input"}|Opts],
+    CompileOpts = [{doc_root, "test/files/input"}|Opts],
     case setup_compile(F) of
         {ok, [CV|Other]} ->
             CO = proplists:get_value(compile_opts, Other, []),

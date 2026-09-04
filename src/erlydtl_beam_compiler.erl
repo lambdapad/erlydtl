@@ -1412,8 +1412,8 @@ for_loop_ast(IteratorList, LoopValue, IsReversed, Contents,
     {Row, Col} = element(2, hd(IteratorList)),
     ForId = lists:concat(["/", Level, "_", Row, ":", Col]),
 
-    Counters = merl:var(lists:concat(["Counters", ForId])),
-    Vars = merl:var(lists:concat(["Vars", ForId])),
+    Counters = merl:var(list_to_atom(lists:concat(["Counters", ForId]))),
+    Vars = merl:var(list_to_atom(lists:concat(["Vars", ForId]))),
 
     %% setup
     VarScope = lists:map(
@@ -1665,7 +1665,7 @@ custom_tags_modules_ast({identifier, Pos, Name}, InterpretedArgs, NewTagVar,
     end.
 
 call_ast(Module, TreeWalker) ->
-    call_ast(Module, merl:var("_Variables"), #ast_info{}, TreeWalker).
+    call_ast(Module, merl:var('_Variables'), #ast_info{}, TreeWalker).
 
 call_with_ast(Module, Variable, TreeWalker) ->
     {{VarAst, VarInfo}, TreeWalker2} = resolve_variable_ast(Variable, false, TreeWalker),
@@ -1701,6 +1701,6 @@ create_scope(Vars, {Row, Col}, FileName, #treewalker{ context=Context }) ->
     create_scope(Vars, lists:concat(["::", FileName, "[", Level, ",", Row, ":", Col, "]"])).
 
 varname_ast([$_|VarName]) ->
-    merl:var(lists:concat(["_Var__", VarName]));
+    merl:var(list_to_atom(lists:concat(["_Var__", VarName])));
 varname_ast(VarName) ->
-    merl:var(lists:concat(["Var_", VarName])).
+    merl:var(list_to_atom(lists:concat(["Var_", VarName]))).

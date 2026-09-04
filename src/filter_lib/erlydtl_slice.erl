@@ -2,12 +2,12 @@
 
 -export([slice/2,slice_input_cases/7]).
 
--ifdef(TEST).
--undef(TEST).
--endif.
--define(TEST,"").
+%% ?debugFmt/?debugMsg below are eunit.hrl macros used here as ad-hoc trace
+%% logging, gated to no-ops by NODEBUG; nothing here is an actual eunit test.
+%% NOTEST keeps the include from auto-defining TEST and exporting a test/0
+%% that calls the (unavailable outside the test profile) eunit:test/1; the
+%% test profile still sets TEST itself and takes precedence over this.
 -define(NOTEST,1).
-%% remark out NODEBUG when running tests; unremark when debugging individual use cases
 -define(NODEBUG,1).
 -include_lib("eunit/include/eunit.hrl").
 

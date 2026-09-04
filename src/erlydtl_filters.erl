@@ -36,16 +36,17 @@
 -author('emmiller@gmail.com').
 -author('drew dot gulino at google dot com').
  
--ifdef(TEST).
--undef(TEST).
--endif.
--define(TEST,"").
-%-define(NOTEST,1).
+%% ?debugFmt/?debugMsg below are eunit.hrl macros used here as ad-hoc trace
+%% logging, gated to no-ops by NODEBUG; nothing here is an actual eunit test.
+%% NOTEST keeps the include from auto-defining TEST and exporting a test/0
+%% that calls the (unavailable outside the test profile) eunit:test/1; the
+%% test profile still sets TEST itself and takes precedence over this.
+-define(NOTEST,1).
 -define(NODEBUG,1).
 -include_lib("eunit/include/eunit.hrl").
- 
+
 -ifdef(TEST).
-        -export([cast_to_float/1,cast_to_integer/1,stringformat_io/7,round/2,unjoin/2,addDefaultURI/1]).
+        -export([cast_to_float/1,cast_to_integer/1,stringformat_io/7,round/2,addDefaultURI/1]).
 -endif.
 
 -import(erlydtl_time_compat, [monotonic_time/0, unique_integer/0]).
@@ -502,7 +503,7 @@ lower(Input) ->
 make_list(Input) when is_binary(Input) ->
     make_list(unicode:characters_to_list(Input));
 make_list(Input) ->
-    unjoin(Input,"").
+    unjoin0(Input).
 
 %% @doc Converts a phone number (possibly containing letters) to its numerical equivalent.
 phone2numeric(Input) when is_binary(Input) ->
@@ -1281,56 +1282,14 @@ yesno_io(Val, Choices) ->
        true -> True
     end.
 
-%% unjoin == split in other languages; inverse of join
-%%FROM: http://www.erlang.org/pipermail/erlang-questions/2008-October/038896.html
-unjoin(String, []) ->
-    unjoin0(String);
-unjoin(String, [Sep]) when is_integer(Sep) ->
-    unjoin1(String, Sep);
-unjoin(String, [C1,C2|L]) when is_integer(C1), is_integer(C2) ->
-    unjoin2(String, C1, C2, L).
-
 %% Split a string at "", which is deemed to occur _between_
 %% adjacent characters, but queerly, not at the beginning
 %% or the end.
-
+%%FROM: http://www.erlang.org/pipermail/erlang-questions/2008-October/038896.html
 unjoin0([C|Cs]) ->
     [[C] | unjoin0(Cs)];
 unjoin0([]) ->
     [].
-
-%% Split a string at a single character separator.
-
-unjoin1(String, Sep) ->
-    unjoin1_loop(String, Sep, "").
-
-unjoin1_loop([Sep|String], Sep, Rev) ->
-    [lists:reverse(Rev) | unjoin1(String, Sep)];
-unjoin1_loop([Chr|String], Sep, Rev) ->
-    unjoin1_loop(String, Sep, [Chr|Rev]);
-unjoin1_loop([], _, Rev) ->
-    [lists:reverse(Rev)].
-
-%% Split a string at a multi-character separator
-%% [C1,C2|L].  These components are split out for
-%% a fast match.
-
-unjoin2(String, C1, C2, L) ->
-    unjoin2_loop(String, C1, C2, L, "").
-
-unjoin2_loop([C1|S = [C2|String]], C1, C2, L, Rev) ->
-    case unjoin_prefix(L, String)
-        of no   -> unjoin2_loop(S, C1, C2, L, [C1|Rev])
-            ; Rest -> [lists:reverse(Rev) | unjoin2(Rest, C1, C2, L)]
-    end;
-unjoin2_loop([Chr|String], C1, C2, L, Rev) ->
-    unjoin2_loop(String, C1, C2, L, [Chr|Rev]);
-unjoin2_loop([], _, _, _, Rev) ->
-    [lists:reverse(Rev)].
-
-unjoin_prefix([C|L], [C|S]) -> unjoin_prefix(L, S);
-unjoin_prefix([],    S)     -> S;
-unjoin_prefix(_,     _)     -> no.
 
 %% random compatibility
 %% Credits: https://github.com/benoitc/hackney/blob/master/src/hackney_util.erl

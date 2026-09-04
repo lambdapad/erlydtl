@@ -2,6 +2,15 @@
 
 -compile([export_all, nowarn_export_all]).
 
+%% find_value/2 and to_list/2 duck-type their argument at runtime: they
+%% reach into gb_trees/dict's internal representation directly instead of
+%% going through their (opaque) API, and dispatch to a module named by the
+%% tuple's first element (a convention used to look up values on tagged
+%% tuples such as Elixir structs). None of that can be given a static type,
+%% so dialyzer is silenced for these two functions rather than for the
+%% pattern in general.
+-dialyzer({nowarn_function, [find_value/2, to_list/2]}).
+
 -type text() :: string() | binary().
 -type phrase() :: text() | {text(), {PluralPhrase::text(), non_neg_integer()}}.
 -type locale() :: term() | {Locale::term(), Context::binary()}.

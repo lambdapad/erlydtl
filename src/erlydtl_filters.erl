@@ -1200,7 +1200,12 @@ maybe_urlencode_char(C, Safe) ->
     end.
 
 %% @doc Converts URLs in text into clickable links.
-%%TODO: Autoescape not yet implemented
+%%
+%% The non-url text is HTML-escaped, and so is the url itself when it is
+%% used inside the generated href/text. The output is built directly as an
+%% iolist instead of through io_lib:format/2, since the input here is
+%% attacker-controlled text, not a format string (using it as one used to
+%% let a stray "~" in ordinary text crash rendering with a badarg).
 urlize(Input) when is_binary(Input) ->
     urlize(unicode:characters_to_list(Input),0);
 urlize(Input) ->
@@ -1213,23 +1218,27 @@ urlize(Input, Trunc) ->
     RegexResult = re:run(Input,RE,[global]),
     case RegexResult of
         {match, Matches} ->
-            Indexes = lists:map(fun(Match) -> lists:nth(2,Match) end, Matches),
-            Domains = lists:map(fun({Start, Length}) -> lists:sublist(Input, Start+1, Length) end, Indexes),
-            URIDomains = lists:map(fun(Domain) -> addDefaultURI(Domain) end, Domains),
-            case Trunc == 0 of
-                true ->
-                    DomainsTrunc = Domains;
-                false ->
-                    DomainsTrunc = lists:map(fun(Domain) -> string:concat( string:substr(Domain,1,Trunc-3), "...") end, Domains)
-            end,
-            ReplaceList = lists:zip(URIDomains,DomainsTrunc),
-            ReplaceStrings = lists:map(fun({URIDomain,Domain}) -> lists:flatten(io_lib:format("<a href=\"~s\" rel=\"nofollow\">~s</a>",[URIDomain,Domain])) end, ReplaceList),
-            Template = re:replace(Input,"(([[:alpha:]]+://|www\.)[^<>[:space:]]+[[:alnum:]/])", "~s", [global,{return,list}]),
-            Result = lists:flatten(io_lib:format(Template,ReplaceStrings)),
-            Result;
+            Spans = lists:map(fun(Match) -> lists:nth(2,Match) end, Matches),
+            lists:flatten(urlize_spans(Input, 0, Spans, Trunc));
         nomatch ->
-            Input
+            force_escape(Input)
     end.
+
+urlize_spans(Input, Pos, [], _Trunc) ->
+    force_escape(lists:nthtail(Pos, Input));
+urlize_spans(Input, Pos, [{Start, Length} | Rest], Trunc) ->
+    Pre = lists:sublist(Input, Pos + 1, Start - Pos),
+    Domain = lists:sublist(Input, Start + 1, Length),
+    URIDomain = addDefaultURI(Domain),
+    DomainTrunc =
+        case Trunc of
+            0 -> Domain;
+            _ -> string:concat(string:substr(Domain, 1, Trunc - 3), "...")
+        end,
+    [force_escape(Pre),
+     "<a href=\"", force_escape(URIDomain), "\" rel=\"nofollow\">",
+     force_escape(DomainTrunc), "</a>"
+     | urlize_spans(Input, Start + Length, Rest, Trunc)].
 
 %% @doc Converts URLs into clickable links just like urlize, but truncates URLs longer than the given character limit.
 urlizetrunc(Input, Trunc) ->

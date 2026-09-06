@@ -95,7 +95,7 @@ test_unparser_fun({Name, Tpl}) ->
                            case erlydtl_compiler:do_parse_template(
                                   Unparsed, #dtl_context{}) of
                                {ok, DptU} ->
-                                   case catch compare_tree(Dpt, DptU) of
+                                   case erlydtl_runtime:capture_exit(fun() -> compare_tree(Dpt, DptU) end) of
                                        ok -> ok;
                                        Err -> throw({compare_failed, Err, {test_ast, Dpt}, {unparsed, {source, Unparsed}, {ast, DptU}}})
                                    end;

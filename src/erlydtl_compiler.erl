@@ -368,7 +368,9 @@ is_up_to_date(CheckSum, Context) ->
 parse_file(File, Context) ->
     {M, F} = Context#dtl_context.reader,
     ReaderOptions = Context#dtl_context.reader_options,
-    case catch erlydtl_runtime:read_file_internal(M, F, File, ReaderOptions) of
+    case erlydtl_runtime:capture_exit(
+           fun() -> erlydtl_runtime:read_file_internal(M, F, File, ReaderOptions) end
+          ) of
         {ok, Data} ->
             parse_template(Data, Context);
         {error, Reason} ->

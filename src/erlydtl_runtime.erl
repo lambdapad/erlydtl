@@ -11,6 +11,20 @@
 %% pattern in general.
 -dialyzer({nowarn_function, [find_value/2, to_list/2]}).
 
+%% Replacement for the deprecated `catch Expr` construct: runs Fun and
+%% returns its value on success, a thrown value unchanged, {'EXIT', Reason}
+%% on exit, or {'EXIT', {Reason, Stacktrace}} on error, exactly like `catch`
+%% used to.
+-spec capture_exit(fun(() -> term())) -> term().
+capture_exit(Fun) ->
+    try
+        Fun()
+    catch
+        throw:Reason -> Reason;
+        exit:Reason -> {'EXIT', Reason};
+        error:Reason:Stacktrace -> {'EXIT', {Reason, Stacktrace}}
+    end.
+
 -type text() :: string() | binary().
 -type phrase() :: text() | {text(), {PluralPhrase::text(), non_neg_integer()}}.
 -type locale() :: term() | {Locale::term(), Context::binary()}.

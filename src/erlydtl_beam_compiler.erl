@@ -327,13 +327,15 @@ is_up_to_date(CheckSum, Context) ->
     Module = Context#dtl_context.module,
     {M, F} = Context#dtl_context.reader,
     ReaderOptions = Context#dtl_context.reader_options,
-    case catch Module:source() of
+    case erlydtl_runtime:capture_exit(fun() -> Module:source() end) of
         {_, CheckSum} ->
-            case catch Module:dependencies() of
+            case erlydtl_runtime:capture_exit(fun() -> Module:dependencies() end) of
                 L when is_list(L) ->
                     RecompileList = lists:foldl(
                                       fun ({XFile, XCheckSum}, Acc) ->
-                                              case catch erlydtl_runtime:read_file_internal(M, F, XFile, ReaderOptions) of
+                                              case erlydtl_runtime:capture_exit(
+                                                     fun() -> erlydtl_runtime:read_file_internal(M, F, XFile, ReaderOptions) end
+                                                    ) of
                                                   {ok, Data} ->
                                                       case binary_to_list(erlang:md5(Data)) of
                                                           XCheckSum ->
